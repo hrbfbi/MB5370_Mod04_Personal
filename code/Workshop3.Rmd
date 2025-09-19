@@ -1,0 +1,803 @@
+---
+title: "MB5370 Module 04. Workshop 3 - Data wrangling in R"
+author: "Heather Brock"
+output: html_document
+date: "2025-09-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Tidying data using Tidyr
+
+Tidy data using tidyverse.
+
+```{r}
+library(tidyverse)
+```
+
+# Tidy data
+
+```{r}
+table1
+#> # A tibble: 6 × 4
+#>   country      year  cases population
+#>   <chr>       <int>  <int>      <int>
+#> 1 Afghanistan  1999    745   19987071
+#> 2 Afghanistan  2000   2666   20595360
+#> 3 Brazil       1999  37737  172006362
+#> 4 Brazil       2000  80488  174504898
+#> 5 China        1999 212258 1272915272
+#> 6 China        2000 213766 1280428583
+table2
+#> # A tibble: 12 × 4
+#>   country      year type           count
+#>   <chr>       <int> <chr>          <int>
+#> 1 Afghanistan  1999 cases            745
+#> 2 Afghanistan  1999 population  19987071
+#> 3 Afghanistan  2000 cases           2666
+#> 4 Afghanistan  2000 population  20595360
+#> 5 Brazil       1999 cases          37737
+#> 6 Brazil       1999 population 172006362
+#> # ... with 6 more rows
+table3
+#> # A tibble: 6 × 3
+#>   country      year rate             
+#> * <chr>       <int> <chr>            
+#> 1 Afghanistan  1999 745/19987071     
+#> 2 Afghanistan  2000 2666/20595360    
+#> 3 Brazil       1999 37737/172006362  
+#> 4 Brazil       2000 80488/174504898  
+#> 5 China        1999 212258/1272915272
+#> 6 China        2000 213766/1280428583
+```
+
+Only table1 is considered tidy. 
+How we make our dataset tidy is by following three interrelated rules: 1. Each variable must have its own column. 2. Each observation must have its own row. 3. Each value must have its own cell.
+
+Note %>% is a pipe. A pipe is really only designed to help you better understand what the code is doing. It takes the data (left of the pipe) and applies the function (right of pipe). %>%, and |>  achieve the exact same thing (|> is brand new in base R, %>% only works in tidyr and magrittr packages).
+
+Below, we apply the function mutate to compute the rate given two variables.
+
+```{r}
+# Compute rate per 10,000
+table1 %>% 
+  mutate(rate = cases / population * 10000)
+#> # A tibble: 6 × 5
+#>   country      year  cases population  rate
+#>   <chr>       <int>  <int>      <int> <dbl>
+#> 1 Afghanistan  1999    745   19987071 0.373
+#> 2 Afghanistan  2000   2666   20595360 1.29 
+#> 3 Brazil       1999  37737  172006362 2.19 
+#> 4 Brazil       2000  80488  174504898 5.61 
+#> 5 China        1999 212258 1272915272 1.67 
+#> 6 China        2000 213766 1280428583 1.67
+
+# Compute cases per year
+table1 %>% 
+  count(year, wt = cases)
+#> # A tibble: 2 × 2
+#>    year      n
+#>   <int>  <int>
+#> 1  1999 250740
+#> 2  2000 296920
+
+# Visualise changes over time
+library(ggplot2)
+ggplot(table1, aes(year, cases)) + 
+  geom_line(aes(group = country), colour = "grey50") + 
+  geom_point(aes(colour = country))
+```
+
+# Pivoting data to make it tidy
+
+The first step in tidying the data is to understand what each variable and observation actually means.
+
+Once you understand the data you’re looking at, the second step is to resolve one of the two common problems with untidy data. These are:
+1. One variable is spread across multiple columns
+2. One observation is scattered across multiple rows
+
+To fix these you need to pivot your data (i.e. move it around) into tidy form using two functions in tidyr: pivot_longer() to lengthen data and pivot_wider() to widen data.
+
+# Lengthening datasets
+
+Start with pivoting the data frame longer because this is the most common tidying issue you will likely face within a given dataset. pivot_longer() makes datasets “longer” by increasing the number of rows and decreasing the number of columns, solving those common problems of data values in the variable name (e.g wk1, wk2, wk3, etc.).
+
+Example:
+
+```{r}
+billboard
+```
+
+In this dataset, each observation is a song. The first three columns (artist, track and date.entered) are variables that describe the song. Then we have 76 columns (wk1-wk76) that describe the rank of the song in each week. Here, the column names are one variable (the week) and the cell values are another (the rank). To tidy the billboard dataset we will use pivot_longer().
+
+```{r}
+billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"), 
+    names_to = "week", 
+    values_to = "rank"
+  )
+```
+
+As you can see in the above code snippet, there are three key arguments to the pivot_longer() function:
+1. cols which specifies the columns you want to pivot (the ones that aren’t variables). Note: you could either use !c(artist, track, date.entered) OR starts_with('wk') because the cols argument uses the same syntax as select().
+2. names_to which names the variable stored in the column names. We chose to name that variable week.
+3. values_to which names the variable stored in the cell values that we named rank
+
+Note that in the code "week" and "rank" are quoted because they are new variables that we are creating, they don’t exist yet in the data when we run the pivot_longer() call.
+
+Notice the NA values in the output above? It looks like “Baby Don’t Cry” by 2 Pac was only in the top 100 for 7 out of 76 weeks. Therefore, when we lengthened the data, the weeks where it wasn't on the charts became ‘NA.’ These NA’s were forced to exist because of the structure of the dataset not because they are actually unknown. Therefore, we can simply ask pivot_longer to remove them by adding the argument values_drop_na = TRUE as shown below:
+
+```{r}
+billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"), 
+    names_to = "week", 
+    values_to = "rank",
+    values_drop_na = TRUE
+  )
+```
+
+There are still some things we could do to improve the format to make future computation easier. Such as converting some of our values from strings to numbers using mutate() and parse_number().
+
+# Pivoting longer
+
+Let's look further into what pivoting actually does to our data. We will start with a simple dataset and once again follow an example from R4DS. Note the use of the term “tribble” here (not the same as tibble) but also a type of dataframe that allows us to construct small tibbles by hand. Do not worry about it now.
+
+```{r}
+df <- tribble(
+  ~id,  ~bp1, ~bp2,
+   "A",  100,  120,
+   "B",  140,  115,
+   "C",  120,  125
+)
+```
+
+Here, all we have done is created a dataset called ‘df’ with 3 variables and their associated values. 
+However, we want our new (tidy) dataset to have three variables: 
+1. id (which already exists)
+2. measurement (the column names) 
+3. value (the cell values)
+
+To make this happen we need to pivot df longer:
+
+```{r}
+df |> 
+  pivot_longer(
+    cols = bp1:bp2,
+    names_to = "measurement",
+    values_to = "value"
+  )
+```
+
+As you can see, we have successfully pivoted the data longer. The cols argument specifies the columns we want to pivot (bp1 and bp2). The names_to argument specifies the name of the new variable that will contain the column names (we named it measurement). The values_to argument specifies the name of the new variable that will contain the cell values (we named it value).
+
+# Widening datasets
+
+In less common cases, we may need to widen a dataset rather than lengthen it. Widening is essentially the opposite of lengthening and we do so by using the function pivot_wider(). pivot_wider() allows us to handle an observation if it is scattered across multiple rows.
+
+We’ll use an example from R4DS to explore pivot_wider() looking at the cms_patient_experience dataset from the Centers of Medicare and Medicaid.
+
+```{r}
+cms_patient_experience
+```
+
+The core unit being studied is an organization. But in this format, each organization is spread across six rows with one row for each measurement taken in the survey organization. We can see the complete set of values for measure_cd and measure_title by using distinct():
+
+```{r}
+cms_patient_experience |> 
+  distinct(measure_cd, measure_title)
+```
+
+Neither of these columns will make particularly great variable names: measure_cd doesn’t hint at the meaning of the variable and measure_title is a long sentence containing spaces. We’ll use measure_cd as the source for our new column names for now, but in a real analysis you might want to create your own variable names that are both short and meaningful.
+
+pivot_wider() has the opposite interface to pivot_longer(): instead of choosing new column names, we need to provide the existing columns that define the values (values_from) and the column name (names_from):
+
+```{r}
+cms_patient_experience |> 
+  pivot_wider(
+    names_from = measure_cd,
+    values_from = prf_rate
+  )
+```
+
+The above output doesn’t look quite right; we still seem to have multiple rows for each organization. That’s because, we also need to tell pivot_wider() which column or columns have values that uniquely identify each row; in this case those are the variables starting with "org":
+
+```{r}
+cms_patient_experience |> 
+  pivot_wider(
+    id_cols = starts_with("org"),
+    names_from = measure_cd,
+    values_from = prf_rate
+  )
+```
+
+# Pivoting wider
+
+To understand what pivot_wider() does to our data, let’s once again use a simple example. This time we have two patients with id s A and B, and we have three blood pressure (bp) measurements from patient A and two from patient B:
+
+```{r}
+df <- tribble(
+  ~id, ~measurement, ~value,
+  "A",        "bp1",    100,
+  "B",        "bp1",    140,
+  "B",        "bp2",    115, 
+  "A",        "bp2",    120,
+  "A",        "bp3",    105
+)
+```
+
+We’ll take the names from the measurement column using the names_from() argument and the values from the value column using the values_from() argument:
+
+```{r}
+df |> 
+  pivot_wider(
+    names_from = measurement,
+    values_from = value
+  )
+```
+
+To start the pivoting process, pivot_wider() needs to first figure out what will go in the rows and columns. The new column names will be the unique values of measurement.
+
+```{r}
+df |> 
+  distinct(measurement) |> 
+  pull()
+```
+
+By default, the rows in the output are determined by all the variables that aren’t going into the new names or values. These are called the id_cols. Here there is only one column, but in general there can be any number.
+
+```{r}
+df |> 
+  select(-measurement, -value) |> 
+  distinct()
+```
+
+pivot_wider() then combines these results to generate an empty dataframe:
+
+```{r}
+df |> 
+  select(-measurement, -value) |> 
+  distinct() |> 
+  mutate(x = NA, y = NA, z = NA)
+```
+
+It then fills in all the missing values using the data in the input. In this case, not every cell in the output has a corresponding value in the input as there’s no third blood pressure measurement for patient B, so that cell remains missing.
+
+# Separating and uniting data tables
+
+The last two functions we’ll cover in this section are separate() and unite(). These functions are useful when you have multiple variables stored in one column (separate()) or one variable stored in multiple columns (unite()).
+
+In table3, we see one column (rate) that contains two variables (cases and population). To address this, we can use the separate() function which separates one column into multiple columns wherever you designate.
+
+```{r}
+table3
+```
+
+We need to split the rate column up into two variables: 1) cases and 2) population. separate() will take the name of the column we want to split and the names of the columns we want it split into. See the code below:
+
+```{r}
+table3 %>% 
+  separate(rate, into = c("cases", "population"))
+```
+
+By default, separate() will split values wherever it sees a non-alphanumeric character (i.e. a character that isn’t a number or letter). For example, in the code above, separate() split the values of rate at the forward slash characters. If you wish to use a specific character to separate a column, you can pass the character to the sep argument of separate(). For example, we could rewrite the code above as:
+
+```{r}
+table3 %>% 
+  separate(rate, into = c("cases", "population"), sep = "/")
+```
+
+Notice the data types in table3 above. Both cases and population are listed as character (<chr>) types. This is a default of using separate(). However, since the values in those columns are actually numbers, we want to ask separate() to convert them to better types using convert = TRUE. Now you can see they are listed as integer types(<int>)
+
+```{r}
+table3 %>% 
+  separate(rate, into = c("cases", "population"), convert = TRUE)
+```
+
+You can also pass a vector of integers to sep. separate() will interpret the integers as positions to split at. Positive values start at 1 on the far-left of the strings; negative values start at -1 on the far-right of the strings. When using integers to separate strings, the length of sep should be one less than the number of names in into.
+You can use this arrangement to separate the last two digits of each year. This makes this data less tidy, but is useful in other cases, as you’ll see in a little bit.
+
+```{r}
+table3 %>% 
+  separate(year, into = c("century", "year"), sep = 2)
+```
+
+Using unite():
+
+To perform the inverse of separate() we will use unite() to combine multiple columns into a single column. In the example below for table5, we use unite() to rejoin century and year columns. unite() takes a data frame, the name of the new variable and a set of columns to combine using dplyr::select().
+
+```{r}
+table5
+```
+
+```{r}
+table5 %>% 
+  unite(new, century, year, sep = "")
+```
+
+Here we need to add sep ="" because we don’t want any separator (the default is to add an underscore _)
+
+# Handling missing values
+
+Missing values are very common in datasets. Missing values are sometimes populated with NA or sometimes they could be simply missing altogether from the data (i.e. a blank cell, the worst!).
+
+# Explicit missing values
+
+The way data is missing matters a lot when tidying your data, so think of it like this: An NA (explicit absence) indicates the presence of absent data, and a blank cell just indicates the absence of data (implicit absence). One you know for sure is a no data value, the other you have no idea!
+
+A common use for missing values is as a data entry convenience. When data is entered by hand, missing values sometimes indicate that the value in the previous row has been repeated (or carried forward):
+
+```{r}
+treatment <- tribble(
+  ~person,           ~treatment, ~response,
+  "Derrick Whitmore", 1,         7,
+  NA,                 2,         10,
+  NA,                 3,         NA,
+  "Katherine Burke",  1,         4
+)
+```
+
+You can fill in these missing values with tidyr::fill(). It works like select(), taking a set of columns:
+
+```{r}
+treatment |>
+  fill(everything())
+```
+
+This treatment is sometimes called “last observation carried forward”, or locf for short. You can use the .direction argument to fill in missing values that have been generated in more exotic ways.
+
+# Fixed values
+
+Sometimes missing values represent some fixed and known value, most commonly 0. You can use dplyr::coalesce() to replace them:
+
+```{r}
+x <- c(1, 4, 5, 7, NA)
+coalesce(x, 0)
+```
+
+And sometimes you’ll encounter the opposite problem where some other concrete value actually represents a missing value. This typically happens when data is generated from an older software that can’t properly represent missing values so it uses something like 99 or -999 in place of the missing value. You can fix this with dplyr::na_if():
+
+```{r}
+x <- c(1, 4, 5, 7, -99)
+na_if(x, -99)
+```
+
+Try to catch these kinds of errors when you actually read in the data
+
+# NaN
+
+NaN stands for Not a Number. It is a special type of missing value that is generated by mathematical operations that don’t yield a well-defined result. For example, 0/0 is NaN because there’s no good answer to that question. NaN is distinct from NA, which is used to represent missing data. NaN is a specific value that indicates an undefined or unrepresentable numerical result, whereas NA represents the absence of any value. It typically behaves the same as NA but in some rare cases you may need to distinguish it using is.nan(x):
+
+```{r}
+x <- c(NA, NaN)
+x * 10
+#> [1]  NA NaN
+x == 1
+#> [1] NA NA
+is.na(x)
+#> [1] TRUE TRUE
+```
+
+NaN is most common when you performing a mathematical operation that has an indeterminate result.
+
+# Implicit missing values
+
+So far we’ve talked about missing values that are explicitly missing, i.e. you can see an NA in your data. But missing values can also be implicitly missing, if an entire row of data is simply absent from the data. Let’s illustrate the difference with a simple dataset that records the price of some stock each quarter:
+
+```{r}
+stocks <- tibble(
+  year  = c(2020, 2020, 2020, 2020, 2021, 2021, 2021),
+  qtr   = c(   1,    2,    3,    4,    2,    3,    4),
+  price = c(1.88, 0.59, 0.35,   NA, 0.92, 0.17, 2.66)
+)
+```
+
+This dataset has two missing observations:
+1. The price in the fourth quarter of 2020 is explicitly missing, because its value is NA.
+2. The price for the first quarter of 2021 is implicitly missing, because it simply does not appear in the dataset.
+
+Sometimes you want to make implicit missings explicit in order to have something physical to work with. In other cases, explicit missings are forced upon you by the structure of the data and you want to get rid of them. Remember how we did this when we used pivot_wider()?
+
+Here’s another example where if we pivot stocks wider to put the quarter in the columns, both missing values become explicit:
+
+```{r}
+stocks |>
+  pivot_wider(
+    names_from = qtr, 
+    values_from = price
+  )
+```
+
+## How can I import data into R?
+
+First we will learn how to use the readr package (part of the tidyverse) to load simple files into R.
+
+# CSV files
+
+The most common file type for representing tabular data is a .csv or ‘comma-separated values.’ There are others, like .dbf or .xlsx, each of which are used by various software. By far the most universal is .csv, which is an extremely simple database structure that is efficient in space (ie. small file size) and agnostic to any one software.
+
+Here is what a simple CSV looks like, where data values are separated by commas, which dictate where the columns will lie :
+
+"
+Student ID,Full Name,favourite.food,mealPlan,AGE 1,Sunil Huffmann,Strawberry yoghurt,Lunch only,4 2,Barclay Lynn,French fries,Lunch only,5 3,Jayendra Lyne,N/A,Breakfast and lunch,7 4,Leon Rossini,Anchovies,Lunch only, 5,Chidiegwu Dunkel,Pizza,Breakfast and lunch,five 6,Güvenç Attila,Ice cream,Lunch only,6
+"
+
+Some things to note:
+1. The first row or “header row” gives the column names
+2. The following six rows provide the data. 
+3. The columns are separated by commas, so that each data value has a comma separating it from the value in the next column.
+
+To read your .csv file into R use read_csv() from the readr package, which comes installed with the tidyverse. When using the read_csv() function, the first argument is the path to the file on your computer. This is super important! Think about the path as the “address” to the file, as in, where does it live on your computer? You can copy this address from windows explorer by clicking on the navigation bar at the top. 
+
+Copy it and paste it into the function.
+
+Also note R’s peculiar use of slashes - to import data you need to use forward slashes (‘/’) or a double backlash (‘\\’). 
+
+The example below shows that we have a data file called students.csv and it lives in a folder called ‘data’ on your computer. Note this isn’t a real file you have, just an example so this code won’t work.
+
+? read_csv
+students <- read_csv("C://data/students.csv")
+
+To play with read_csv() let’s read it into R directly from the URL provided in the textbook (https://pos.it/r4ds-students-csv)
+
+```{r}
+students <- read_csv("https://pos.it/r4ds-students-csv")
+```
+
+When you run read_csv(), it prints out a message telling you the number of rows and columns of data, the delimiter that was used, and the column specifications (names of columns organized by the type of data the column contains). It also prints out some information about retrieving the full column specification and how to quiet this message. This message is an integral part of readr.
+
+# Practical advice
+
+Once you read data in, the first step should include assessing whether it is tidy. That means understanding the nature of your variables, and asking the questions:
+
+1. Are observations in rows?  
+2. Are variables in columns?
+
+You will also need to check whether the data are valid. Are there any odd variables? Things that seems strange, like spelling errors or some other issue that R will have with it? 
+
+Let’s take another look at the students data with that in mind.
+
+```{r}
+students
+```
+
+In the favourite.food column, there are a bunch of food items, and then the character string N/A, which should have been a real NA that R will recognize as “not available”. This is something we can address using the na argument. By default, read_csv() only recognizes empty strings ("") in this dataset as NAs, we want it to also recognize the character string "N/A".
+
+```{r}
+students <- read_csv("https://pos.it/r4ds-students-csv", na = c("N/A", ""))
+
+students
+```
+
+You might also notice that the Student ID and Full Name columns are surrounded by backticks. That’s because they contain spaces, breaking R’s usual rules for variable names; they’re non-syntactic names (think back to our intro to programming workshop!). To refer to these variables, you need to surround them with backticks, `:
+
+```{r}
+students |> 
+  rename(
+    student_id = `Student ID`,
+    full_name = `Full Name`
+  )
+```
+
+There are other readr functions which read in other types of data files.
+
+## Learning relational data
+
+# What is relational data?
+
+Relational data is data that is stored in multiple tables that are related to each other through common variables. This is in contrast to a single table that contains all the data. Relational data is often used in databases, where data is stored in multiple tables that can be queried and joined together as needed.
+
+To work with relational data you need verbs that work with pairs of tables. In the same way that ggplot2 is a package for implementing the grammar of graphics, dplyr is a package focused on the grammar of data manipulation. It’s a package specialised for doing data analysis. 
+
+dplyr provides the following verbs to make common data analysis operations easier. 
+
+The three families of verbs designed to work with relational data are:
+
+1. Mutating joins - add new variables to one dataframe from matching observations in another
+2. Filtering joins - filter observations from one data frame based on whether or not they match an observation in the other table
+3. Set operations - treat observations as if they are set elements
+
+Let’s explore relational data using the nycflight13 package dataset.
+
+```{r}
+# install.packages("nycflights13")
+library(nycflights13)
+```
+
+nycflights13 contains four tibbles that are related to the flights table that you used in data transformation:
+
+airlines lets you look up the full carrier name from its abbreviated code:
+
+```{r}
+airlines
+```
+
+airports gives information about each airport, identified by the FAA airport code:
+
+```{r}
+airports
+```
+
+planes gives information about each plane, identified by its tailnum:
+
+```{r}
+planes
+```
+
+weather gives the weather at each NYC airport for each hour:
+
+```{r}
+weather
+```
+
+You only really need to understand the chain of relations between the tables that you are interested in. For nycflights13:
+
+1. flights connects to planes via a single variable, tailnum.
+2. flights connects to airlines through the carrier variable.
+3. flights connects to airports in two ways: via origin and dest variables.
+4. flights connects to weather via origin (the location), and year, month, day and hour (the time).
+
+# Joining datasets
+
+So how can we actually join together our datasets? By identifying the keys. 
+
+A key is a variable (or set of variables) that uniquely identifies an observation. In simple cases, a single variable is sufficient to identify an observation. For example, each plane is uniquely identified by its tailnum. In other cases, multiple variables may be needed. For example, to identify an observation in weather you need five variables: year, month, day, hour, origin.
+
+The two types of keys are primary and foreign. It is possible for a variable to be both a primary and a foreign key depending on which pair of tables you’re considering. For example, origin is part of the weather primary key, and is also a foreign key for the airports table.
+
+1. A primary key uniquely identifies an observation in its own table. For example, planes$tailnum is a primary key because it uniquely identifies each plane in the planes table.
+
+2. A foreign key uniquely identifies an observation in another table. For example, flights$tailnum is a foreign key because it appears in the flights table where it matches each flight to a unique plane.
+
+Once you’ve identified the primary keys in your tables, it’s good practice to verify that they do indeed uniquely identify each observation. One way to do that is to count() the primary keys and look for entries where n is greater than one:
+
+```{r}
+planes %>% 
+  count(tailnum) %>% 
+  filter(n > 1)
+
+weather %>% 
+  count(year, month, day, hour, origin) %>% 
+  filter(n > 1)
+```
+
+Sometimes a table doesn’t have an explicit primary key: each row is an observation, but no combination of variables reliably identifies it. For example, what’s the primary key in the flights table? You might think it would be the date plus the flight or tail number, but neither of those are unique:
+
+```{r}
+flights %>% 
+  count(year, month, day, flight) %>% 
+  filter(n > 1)
+
+flights %>% 
+  count(year, month, day, tailnum) %>% 
+  filter(n > 1)
+```
+
+If a table lacks a primary key, it’s sometimes useful to add one with mutate() and row_number(). That makes it easier to match observations if you’ve done some filtering and want to check back in with the original data. This is called a surrogate key.
+
+A primary key and the corresponding foreign key in another table form a relation. Relations are typically one-to-many. For example, each flight has one plane, but each plane has many flights. In other data, you’ll occasionally see a 1-to-1 relationship. You can think of this as a special case of 1-to-many. You can model many-to-many relations with a many-to-1 relation plus a 1-to-many relation. For example, in this data there’s a many-to-many relationship between airlines and airports: each airline flies to many airports; each airport hosts many airlines.
+
+# Mutating joins
+
+Mutating joins are a great tool we can use for combining a pair of tables.
+
+A mutating join allows you to combine variables from two tables. It first matches observations by their keys, then copies across variables from one table to the other.
+
+Join functions (like the base mutate()) add variables to the right side of your data table so sometimes you’ll need to change the view of your screen to see them all. (Remember your tibble skills! Set your global options!) 
+
+Or you can view them on a new tab entirely with View() in R studio. First we are going to create a narrower subset of the data from nycflights13 just so that it’s easier to see the variables being added one one screen:
+
+```{r}
+flights2 <- flights %>% 
+  select(year:day, hour, origin, dest, tailnum, carrier)
+```
+
+Now we will see what happens when we use the mutating function left_join()
+
+```{r}
+flights2 %>%
+  select(-origin, -dest) %>% 
+  left_join(airlines, by = "carrier")
+```
+
+Here, we have asked it to add the full airline name to the flights2 data by combining the airlines and flights2 data frames with left_join(). Notice the column name has been added on the right and contains the carrier’s full name.
+
+Now, we could have gotten to this same result using the R base mutate() function (see code below), but notice that the code is much more involved and can get messy when matching multiple variables. This is why we use a “mutating join” to make life a little easier.
+
+```{r}
+flights2 %>%
+  select(-origin, -dest) %>% 
+  mutate(name = airlines$name[match(carrier, airlines$carrier)])
+```
+
+Let’s dive into how mutating joins work in detail. Visual representations are a handy tool for conceptualising these joins. 
+
+```{r}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     3, "x3"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2",
+     4, "y3"
+)
+```
+
+Here we have flipped the order of key and value in our x table to show that joins match based on the key, and the value is simply along for the ride.
+
+In an actual join, matches will be indicated with dots. The number of dots = the number of matches = the number of rows in the output.
+
+There are two categories of joins: inner and outer. The inner join is the simplest join as it matches observations with equivalent keys. 
+
+The most important property of an inner join is that unmatched rows are not included in the result. This means that generally inner joins are usually not appropriate for use in analysis because it’s too easy to lose observations.
+
+The output of an inner join is a new data frame that contains the key, the x values, and the y values. We use ‘by’ to tell dplyr which variable is the key:
+
+```{r}
+x %>% 
+  inner_join(y, by = "key")
+```
+
+The other category of join is the outer join which keeps observations that appear in at least one of the tables. There are three types of outer joins:
+
+1. left_join() keeps all observations in x (we’ve seen this in our first example)
+2. right_join() keeps all observations in y
+3. full_join() keeps all observations in x and y
+
+These joins work by adding an additional “virtual” observation to each table. This observation has a key that always matches (if no other key matches), and a value filled with NA. The left join should be your default join, because it preserves the original observations even when there isn’t a match.
+
+This section explains what happens when the keys are not unique. There are two possibilities:
+
+1. One table has duplicate keys. This is useful when you want to add in additional information as there is typically a one-to-many relationship.
+
+```{r}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     2, "x3",
+     1, "x4"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2"
+)
+left_join(x, y, by = "key")
+```
+
+2. Both tables have duplicate keys. This is usually an error because in neither table do the keys uniquely identify an observation. When you join duplicate keys, you get all possible combinations, the Cartesian product:
+
+```{r}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     2, "x3",
+     3, "x4"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2",
+     2, "y3",
+     3, "y4"
+)
+left_join(x, y, by = "key")
+```
+
+So far, the pairs of tables have always been joined by a single variable, and that variable has the same name in both tables. That constraint was encoded by by = "key". You can use other values for by to connect the tables in other ways:
+
+1. The default, by = NULL, uses all variables that appear in both tables, the natural join. For example, the flights and weather tables match on their common variables: year, month, day, hour and origin.
+
+```{r}
+flights2 %>% 
+  left_join(weather)
+```
+
+2. A character vector, by = "x". This is like a natural join, but uses only some of the common variables. For example, flights and planes have year variables, but they mean different things, so we only want to join by tailnum. Note: that the year variables (which appear in both input data frames, but are not constrained to be equal) are disambiguated in the output with a suffix.
+
+```{r}
+flights2 %>% 
+  left_join(planes, by = "tailnum")
+```
+
+3. A named character vector: by = c("a" = "b"). This will match variable a in table x to variable b in table y. The variables from x will be used in the output.
+
+For example, if we want to draw a map (this will be relevant for our mapping workshop!) We need to combine the flights data with the airports data which contains the location (lat and lon) of each airport. 
+
+Each flight has an origin and destination airport, so we need to specify which one we want to join to:
+
+```{r}
+flights2 %>% 
+  left_join(airports, c("dest" = "faa"))
+
+flights2 %>% 
+  left_join(airports, c("origin" = "faa"))
+```
+
+## Pipes for more readable workflows
+
+We’ve already used pipes %>%, and |> but it’s worth us having a look at them to really get what’s going on with them. 
+
+Pipes are a tool that allow us to elegantly code data wrangling steps into a series of sequential actions on a single data frame. When used properly, pipes allow us to implement the same wrangling steps with less code.
+
+In this subject we’ve learned how to use quite a few dplyr functions for data wrangling, including: 'filter', 'group_by', 'summarize', and 'mutate'. So far we’ve coded each of those functions as separate steps in your code. Let’s look at how pipes can be used to code all of those sequentially in a single statement. This reduces the amount of code written, the number of variables you produce and helps turn your code much more into a ‘sentence’ like structure. 
+
+The original pipes %>% come from the magrittr package, which is a part of the tidyverse. More recently (in 2023) R has implemented ‘native pipes’ |>, which do the exact same thing (it’s time to move over to these and update all of our %>% to |>).
+
+Let’s explore pipes using code to tell a kids story about a little bunny named Foo Foo:
+
+Little bunny Foo Foo
+	Went hopping through the forest
+	Scooping up the field mice
+	And bopping them on the head
+	
+foo_foo <- little_bunny()
+
+And we’ll use a function for each key verb: hop(), scoop(), and bop(). Using this object and these verbs, there are (at least) four ways we could retell the story in code:
+
+1. Save each intermediate step as a new object.
+2. Overwrite the original object many times.
+3. Compose functions.
+4. Use the pipe.
+
+Let’s do them all sequentially now.
+
+1.  Saving each step as a new object:
+
+foo_foo_1 <- hop(foo_foo, through = forest)
+foo_foo_2 <- scoop(foo_foo_1, up = field_mice)
+foo_foo_3 <- bop(foo_foo_2, on = head)
+
+The main downside of this form is that it forces you to name each intermediate element. If there are natural names, this is a good idea, and you should do it. But many times, like in this example, there aren’t natural names, and you add numeric suffixes to make the names unique. That leads to two problems:
+
+1. The code is cluttered with unimportant names
+2. You have to carefully increment the suffix on each line.
+
+2. Overwrite the original object instead of creating intermediate objects at each step.
+
+foo_foo <- hop(foo_foo, through = forest)
+foo_foo <- scoop(foo_foo, up = field_mice)
+foo_foo <- bop(foo_foo, on = head)
+
+This is less typing (and less thinking), so you’re less likely to make mistakes. 
+
+However, there are two problems:
+
+1. Debugging is painful: if you make a mistake you’ll need to re-run the complete pipeline from the beginning.
+2. The repetition of the object being transformed (we’ve written foo_foo six times!) obscures what’s changing on each line.
+
+3. String the function calls together
+
+bop(
+  scoop(
+    hop(foo_foo, through = forest),
+    up = field_mice
+  ), 
+  on = head
+)
+
+Here the disadvantage is that you have to read from inside-out, from right-to-left, and that the arguments end up spread far apart (evocatively called the dagwood sandwich problem). In short, this code is hard for a human to consume.
+
+4. Use the pipe
+
+foo_foo %>%
+  hop(through = forest) %>%
+  scoop(up = field_mice) %>%
+  bop(on = head)
+  
+This form focuses on verbs, not nouns. You can read this series of function compositions like it’s a set of imperative actions. Foo Foo hops, then scoops, then bops.
+
+While pipes are great, they are not always the best or only tool for the job. Here are three examples where you might want to consider a tool other than the pipe:
+
+1. Your pipes are longer than (say) ten steps. In that case, create intermediate objects with meaningful names. That will make debugging easier and it makes it easier to understand your code.
+2. You have multiple inputs or outputs. If there isn’t one primary object being transformed, but two or more objects being combined together, don’t use the pipe.
+3. You are starting to think about a directed graph with a complex dependency structure. Pipes are fundamentally linear and expressing complex relationships with them will typically yield confusing code.
