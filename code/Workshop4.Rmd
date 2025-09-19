@@ -1,0 +1,96 @@
+---
+title: "MB5370 Module 04. Workshop 4 - Spatial data in R"
+author: "Heather Brock"
+output: html_document
+date: "2025-09-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R and how we can use it for spatial analyses
+
+R is a programming language and software environment for statistical computing and graphics. It is widely used among statisticians and data miners for developing statistical software and data analysis. R provides a wide variety of statistical and graphical techniques, including linear and nonlinear modeling, classical statistical tests, time-series analysis, classification, clustering, and more.
+
+In general, R can do practically everything that the off-the-shelf GIS programs can do. It’s a little bit harder, but this offers a range of practical benefits:
+
+1. When you write code, you can iteratively improve it until it does exactly what you want. You don’t need to remember complex workflows based on mouse clicks and maintaining processing logs. 
+
+2. You can version control and backup your spatial analysis by hosting your script on github and using git for version control.
+
+3. If you don’t want to version control your analysis, at least you can keep it as a script so that if you ever have to run your analysis again it should be straightforward.
+
+4. In supporting reproducible and open science, you can provide your spatial analysis scripts for free to anyone who wants to see how you’ve done your work. This means you can prove your results are robust, be ethical in the way you work, and scarce funds for marine research and conservation don’t have for someone else to repeat something that you may have already successfully finished - they can learn from you! 
+
+5. You can also interface your results directly with other components of the R system, such as obtaining results from your spatial analysis and then plotting them using ggplot2, or combining them with other datasets to gain deeper insights. This allows you to build ‘end-to-end’ analyses in a single script, taking your raw data, making some map figures, doing a spatial analysis, developing some high quality plots for data visualisation, and exporting your final figures. 
+
+6. As above, you could even do it all in knitr and R markdown to develop a full report within a single R script. Did you know that the entire text book we are using, R4DS, was written as an R script? 
+
+7. And of course, R is free! If you end up in a workplace with no funds to buy ArcGIS, you could make your maps in R for free. 
+
+## Installing the spatial R packages
+
+```{r}
+# install.packages("sf") 
+# install.packages("terra")
+# install.packages("tmap")
+# install.packages("leaflet")
+# install.packages("mgcv")
+```
+
+```{r}
+library(tidyverse)
+library(sf) # simple features
+library (terra) # for raster
+library(tmap) # Thematic maps are geographical maps in which spatial data distributions are visualized
+library(leaflet)
+library(mgcv)
+```
+
+## Introduction to the problem
+
+Here we adapt A/Prof Brown’s statement of the problem. 
+
+You finally have a chance to meet one of your academic heroes. On meeting her, she mentions that she’s read your first PhD paper on zooplankton biogeography. She said she was particularly impressed with the extent of R analysis in your biogeography paper and goes on to suggest you collaborate on a new database she is ‘working with’.
+
+The database has extensive samples of copepod richness throughout Australia’s oceans and the Southern Ocean too. She has a hypothesis - that like many organisms, copepod species richness (which is the number of unique species) will be higher in warmer waters than cooler waters. But she needs help sorting out the data.
+
+First and foremost, she wants you to use your skills in R to help develop a map that could help you ‘get a look at’ whether this hypothesis is worth pursuing. 
+
+## Downloading and loading the spatial dataset
+
+```{r}
+library(readr)
+dat <- read_csv("../data/data-for-course/copepods_raw.csv")
+dat
+```
+
+Notice here the silk_id column, which is just the ID for each of the silks, onto which plankton are recorded. 
+
+For processing, silks are divided into segments, so you will also see a segment_no column. The other columns are pretty self explanatory.
+
+## Check coordinates
+
+The first step to making our first map using ggplot2  is to plot the coordinates for the samples (segments of the CPR silks)
+
+```{r}
+library(ggplot2)
+ggplot(dat) + 
+  aes(x = longitude, y = latitude, color = richness_raw) +
+  geom_point()
+```
+
+This looks good. But this is not a map. It doesn’t have those critical things a real map needs, such as a projection (to bend or warp your data over a spherical globe, the earth) so the real distances between these points when measured with a ruler are probably wrong. It’s simply a scatter plot, but is a nice and easy way to look at your spatial data. 
+
+So, now let’s look at the richness data (our main variable for analysis). This time we are going to visualize richness in a non-spatial way with latitude on the x-axis and richness on the y-axis. 
+
+You will soon note that it’s a fairly common part of the workflow to pop back and forth between spatial and non-spatial analyses. That’s one of the brilliant things about doing your spatial work alongside your analytical work in R.
+
+```{r}
+ggplot(dat, aes(x = latitude, y = richness_raw)) + 
+  stat_smooth() + 
+  geom_point()
+```
+
+usethis::use_github()
