@@ -93,5 +93,25 @@ ggplot(dat, aes(x = latitude, y = richness_raw)) +
   geom_point()
 ```
 
+So, now you will note that something obviously looks odd with this graph, like there is an unnatural change in the data pattern at about latitude -40. What could cause this? Well who knows! Best here is to talk to your collaborator to try to work out what’s going on.
 
-usethis::use_github()
+## Getting going with maps
+
+We will now repeat the above map of richness, but this time using some of R’s specialist packages for GIS and mapping. Now we introduce those important components of a GIS, the ability to reference data to real locations on the planet, and bend it around a mostly spherical ball that is the earth. 
+
+First, we will turn our point data into a spatially referenced data frame using the sf package (sf stands for ‘simple features’) which is an open standard for geospatial databases. For those that think in GIS, you can think of this format as a shapefile or feature collection.
+
+Now, let’s turn our data into a ‘simple features collection’.
+
+```{r}
+sdat <- st_as_sf(dat, coords = c("longitude", "latitude"), 
+                 crs = 4326)
+```
+
+As is good practice use ?st_as_sf to see what else it can convert and what all these arguments mean.
+
+1. st_as_sf converts different data types to simple features. 
+2. dat is our original data. 
+3. coords gives the names of the columns that relate to the spatial coordinates (in order of X coordinate followed by Y coordinate).
+4. crs stands for coordinate reference system which we will discuss next.
+
