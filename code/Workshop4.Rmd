@@ -145,3 +145,17 @@ The data table in sdat looks much like dat did, but note it now has a geometry c
 
 So in summary, a simple feature is like a shapefile, in that it holds a lot of data in columns and rows but is spatially aware. Essentially, that includes extra columns regarding each row's position (in coordinates) and metadata about the coordinate reference system, the type of geometry (Point) and so on.
 
+## Cartography
+
+Now let’s get into the mapping. sf has simple plotting features, like this:
+
+```{r}
+plot(sdat["richness_raw"])
+```
+
+Here we have only plotted the richness column. If we used plot(sdat) it would create a panel for every variable in our dataframe. In sf, we can use square brackets ["richness_raw"] to select a single variable.
+
+```{r}
+plot(sdat)
+```
+
