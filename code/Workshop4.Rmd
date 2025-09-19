@@ -15,19 +15,19 @@ R is a programming language and software environment for statistical computing a
 
 In general, R can do practically everything that the off-the-shelf GIS programs can do. It’s a little bit harder, but this offers a range of practical benefits:
 
-1. When you write code, you can iteratively improve it until it does exactly what you want. You don’t need to remember complex workflows based on mouse clicks and maintaining processing logs. 
+1.  When you write code, you can iteratively improve it until it does exactly what you want. You don’t need to remember complex workflows based on mouse clicks and maintaining processing logs.
 
-2. You can version control and backup your spatial analysis by hosting your script on github and using git for version control.
+2.  You can version control and backup your spatial analysis by hosting your script on github and using git for version control.
 
-3. If you don’t want to version control your analysis, at least you can keep it as a script so that if you ever have to run your analysis again it should be straightforward.
+3.  If you don’t want to version control your analysis, at least you can keep it as a script so that if you ever have to run your analysis again it should be straightforward.
 
-4. In supporting reproducible and open science, you can provide your spatial analysis scripts for free to anyone who wants to see how you’ve done your work. This means you can prove your results are robust, be ethical in the way you work, and scarce funds for marine research and conservation don’t have for someone else to repeat something that you may have already successfully finished - they can learn from you! 
+4.  In supporting reproducible and open science, you can provide your spatial analysis scripts for free to anyone who wants to see how you’ve done your work. This means you can prove your results are robust, be ethical in the way you work, and scarce funds for marine research and conservation don’t have for someone else to repeat something that you may have already successfully finished - they can learn from you!
 
-5. You can also interface your results directly with other components of the R system, such as obtaining results from your spatial analysis and then plotting them using ggplot2, or combining them with other datasets to gain deeper insights. This allows you to build ‘end-to-end’ analyses in a single script, taking your raw data, making some map figures, doing a spatial analysis, developing some high quality plots for data visualisation, and exporting your final figures. 
+5.  You can also interface your results directly with other components of the R system, such as obtaining results from your spatial analysis and then plotting them using ggplot2, or combining them with other datasets to gain deeper insights. This allows you to build ‘end-to-end’ analyses in a single script, taking your raw data, making some map figures, doing a spatial analysis, developing some high quality plots for data visualisation, and exporting your final figures.
 
-6. As above, you could even do it all in knitr and R markdown to develop a full report within a single R script. Did you know that the entire text book we are using, R4DS, was written as an R script? 
+6.  As above, you could even do it all in knitr and R markdown to develop a full report within a single R script. Did you know that the entire text book we are using, R4DS, was written as an R script?
 
-7. And of course, R is free! If you end up in a workplace with no funds to buy ArcGIS, you could make your maps in R for free. 
+7.  And of course, R is free! If you end up in a workplace with no funds to buy ArcGIS, you could make your maps in R for free.
 
 ## Installing the spatial R packages
 
@@ -50,13 +50,13 @@ library(mgcv)
 
 ## Introduction to the problem
 
-Here we adapt A/Prof Brown’s statement of the problem. 
+Here we adapt A/Prof Brown’s statement of the problem.
 
 You finally have a chance to meet one of your academic heroes. On meeting her, she mentions that she’s read your first PhD paper on zooplankton biogeography. She said she was particularly impressed with the extent of R analysis in your biogeography paper and goes on to suggest you collaborate on a new database she is ‘working with’.
 
 The database has extensive samples of copepod richness throughout Australia’s oceans and the Southern Ocean too. She has a hypothesis - that like many organisms, copepod species richness (which is the number of unique species) will be higher in warmer waters than cooler waters. But she needs help sorting out the data.
 
-First and foremost, she wants you to use your skills in R to help develop a map that could help you ‘get a look at’ whether this hypothesis is worth pursuing. 
+First and foremost, she wants you to use your skills in R to help develop a map that could help you ‘get a look at’ whether this hypothesis is worth pursuing.
 
 ## Downloading and loading the spatial dataset
 
@@ -66,13 +66,13 @@ dat <- read_csv("../data/data-for-course/copepods_raw.csv")
 dat
 ```
 
-Notice here the silk_id column, which is just the ID for each of the silks, onto which plankton are recorded. 
+Notice here the silk_id column, which is just the ID for each of the silks, onto which plankton are recorded.
 
 For processing, silks are divided into segments, so you will also see a segment_no column. The other columns are pretty self explanatory.
 
 ## Check coordinates
 
-The first step to making our first map using ggplot2  is to plot the coordinates for the samples (segments of the CPR silks)
+The first step to making our first map using ggplot2 is to plot the coordinates for the samples (segments of the CPR silks)
 
 ```{r}
 library(ggplot2)
@@ -81,9 +81,9 @@ ggplot(dat) +
   geom_point()
 ```
 
-This looks good. But this is not a map. It doesn’t have those critical things a real map needs, such as a projection (to bend or warp your data over a spherical globe, the earth) so the real distances between these points when measured with a ruler are probably wrong. It’s simply a scatter plot, but is a nice and easy way to look at your spatial data. 
+This looks good. But this is not a map. It doesn’t have those critical things a real map needs, such as a projection (to bend or warp your data over a spherical globe, the earth) so the real distances between these points when measured with a ruler are probably wrong. It’s simply a scatter plot, but is a nice and easy way to look at your spatial data.
 
-So, now let’s look at the richness data (our main variable for analysis). This time we are going to visualize richness in a non-spatial way with latitude on the x-axis and richness on the y-axis. 
+So, now let’s look at the richness data (our main variable for analysis). This time we are going to visualize richness in a non-spatial way with latitude on the x-axis and richness on the y-axis.
 
 You will soon note that it’s a fairly common part of the workflow to pop back and forth between spatial and non-spatial analyses. That’s one of the brilliant things about doing your spatial work alongside your analytical work in R.
 
@@ -97,7 +97,7 @@ So, now you will note that something obviously looks odd with this graph, like t
 
 ## Getting going with maps
 
-We will now repeat the above map of richness, but this time using some of R’s specialist packages for GIS and mapping. Now we introduce those important components of a GIS, the ability to reference data to real locations on the planet, and bend it around a mostly spherical ball that is the earth. 
+We will now repeat the above map of richness, but this time using some of R’s specialist packages for GIS and mapping. Now we introduce those important components of a GIS, the ability to reference data to real locations on the planet, and bend it around a mostly spherical ball that is the earth.
 
 First, we will turn our point data into a spatially referenced data frame using the sf package (sf stands for ‘simple features’) which is an open standard for geospatial databases. For those that think in GIS, you can think of this format as a shapefile or feature collection.
 
@@ -110,10 +110,10 @@ sdat <- st_as_sf(dat, coords = c("longitude", "latitude"),
 
 As is good practice use ?st_as_sf to see what else it can convert and what all these arguments mean.
 
-1. st_as_sf converts different data types to simple features. 
-2. dat is our original data. 
-3. coords gives the names of the columns that relate to the spatial coordinates (in order of X coordinate followed by Y coordinate).
-4. crs stands for coordinate reference system which we will discuss next.
+1.  st_as_sf converts different data types to simple features.
+2.  dat is our original data.
+3.  coords gives the names of the columns that relate to the spatial coordinates (in order of X coordinate followed by Y coordinate).
+4.  crs stands for coordinate reference system which we will discuss next.
 
 ## Coordinate reference systems
 
@@ -135,13 +135,13 @@ WKT is a text markup language for representing vector geometry objects on a map.
 
 ## Feature collection (points)
 
-Let’s now look at what we created with sdat. 
+Let’s now look at what we created with sdat.
 
 ```{r}
 sdat
 ```
 
-The data table in sdat looks much like dat did, but note it now has a geometry column. This is where the coordinates (just one point for each data row) are stored. 
+The data table in sdat looks much like dat did, but note it now has a geometry column. This is where the coordinates (just one point for each data row) are stored.
 
 So in summary, a simple feature is like a shapefile, in that it holds a lot of data in columns and rows but is spatially aware. Essentially, that includes extra columns regarding each row's position (in coordinates) and metadata about the coordinate reference system, the type of geometry (Point) and so on.
 
@@ -159,3 +159,82 @@ Here we have only plotted the richness column. If we used plot(sdat) it would cr
 plot(sdat)
 ```
 
+## Thematic maps for communication
+
+There are many nice packages out there to help make pretty maps.
+
+In this module we will use tmap. tmap works similarly to ggplot2 in that we build and add on layers. Here we only have one layer from sdat. We declare the layer with tm_shape() (in this case sdat), then the plot type with the following command.
+
+```{r}
+library(viridis)
+```
+
+```{r}
+#using tmap
+
+tm_shape(sdat) + 
+  tm_dots(col = "richness_raw")
+```
+
+Used viridis to get a nice color scale. Used the aesthetic col = "richness_raw" to color the points by richness. If I wanted to fill in the inside of the points, I would use fill = "richness_raw" and change scale_colour_viridis_c to scale_fill_viridis_c. Look up pch to see the different point shapes you can use. The ones on the left are filled, the ones on the right are hollow (only color) and the ones in the middle are both. If I want to use both color and fill, I can use both col = "richness_raw" and fill = "richness_raw" and have separate scales for each.
+
+```{r}
+plot<-
+sdat |>
+  ggplot() +
+  geom_sf(aes(col = richness_raw), size = 1, pch = 19) +
+  scale_colour_viridis_c(begin = 0.1, option = "magma") +
+  theme_bw()
+```
+
+```{r}
+plot
+```
+
+You can save your plot with ggsave.
+
+```{r}
+ggsave(filename = "output/map1.jpeg", plot = plot)
+```
+
+-   tm_dots to plot dots of the coordinates. Other options are tm_polygons, tm_symbols and many others we’ll see later.
+-   We’ve chosen "richness_raw" as the color scale
+
+Use tmap_save to save the map to your working directory. Remember to change the output path if you need to save it to a different folder.
+
+```{r}
+tmap_save(tm1, filename = "output/Richness-map.png", 
+          width = 600, height = 600)
+```
+
+## Mapping spatial polygons as layers
+
+As mentioned earlier, sf package can handle many types of spatial data, including shapes like polygons. To practice with polygons we will load in a map of Australia and a map of Australia’s continental shelf using tmap to add these layers.
+
+### Loading shapefiles
+
+Unlike the data we just mapped, which was a .csv file with coordinate columns, the polygons in this copepod data are stored as shapefiles.
+
+Note that .shp files are generally considered an undesirable file format because they are inefficient at storing data and to save one shapefile you actually create multiple files. This means bits of the file might be lost if you transfer the data somewhere else. Even in GIS software these days, we are moving well away from shapefiles to use other data formats.
+
+A better format than shapefile is the Geopackage which can save and compress multiple different data types all in a single file.
+
+We are working with shapefiles in this case study because it is still the most likely format you’ll encounter when someone sends you a spatial dataset, but I encourage you to save your personal data in the .gpkg format as you move forward.
+
+We can read shapefiles directly into R with the st_read command (which is like read_csv, but for spatial files):
+
+```{r}
+aus <- st_read("../data/data-for-course/spatial-data/Aussie/Aussie.shp")
+```
+
+```{r}
+shelf <- st_read("../data/data-for-course/spatial-data/aus_shelf/aus_shelf.shp")
+```
+
+As always check out the data by typing the object names and reviewing the output in the console. Note here that the CRS is provided in the shapefile, it’s already spatially aware.
+
+```{r}
+aus
+```
+
+### Mapping your polygons
