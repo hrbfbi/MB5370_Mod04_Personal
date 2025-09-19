@@ -238,3 +238,24 @@ aus
 ```
 
 ### Mapping your polygons
+
+Again, tmap makes it very straightforward to make a map of polygons: 
+
+```{r}
+tm_shape(shelf) + 
+  tm_polygons()
+```
+
+Remember we can make a thematic map by layering it up just as we do for plots in ggplot2. Here we have indicated the shape of our map (shelf) and we have added a command bbox = sdat to expand the extent of the map so it depicts all of our copepod data points. We then add the shape of Australia (aus) on top of the shelf, and finally our copepod data (sdat) in the form of points using tm_dots().
+
+```{r}
+tm_shape(shelf, bbox = sdat) + 
+  tm_polygons() +
+  tm_shape(aus) + 
+  tm_polygons() + 
+  tm_shape(sdat) + 
+  tm_dots()
+```
+
+## Exploring t_map
+
