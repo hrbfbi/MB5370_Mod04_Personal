@@ -115,3 +115,22 @@ As is good practice use ?st_as_sf to see what else it can convert and what all t
 3. coords gives the names of the columns that relate to the spatial coordinates (in order of X coordinate followed by Y coordinate).
 4. crs stands for coordinate reference system which we will discuss next.
 
+## Coordinate reference systems
+
+A coordinate reference system (CRS) is a system that uses coordinates to establish the position of points on the Earth's surface. A CRS defines how the two-dimensional, projected map in your GIS relates to real places on the earth.
+
+```{r}
+crs4326 <- st_crs(4326)
+crs4326 # look at the whole CRS
+crs4326$Name # pull out just the name of the crs
+```
+
+Now check out what the WKT looks like.
+
+```{r}
+crs4326$wkt # crs in well-known text format
+```
+
+WKT is a text markup language for representing vector geometry objects on a map. It is used to describe the geometry of spatial features in a human-readable format.
+
+## 
