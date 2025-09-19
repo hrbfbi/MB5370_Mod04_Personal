@@ -94,3 +94,4 @@ ggplot(dat, aes(x = latitude, y = richness_raw)) +
 ```
 
 
+usethis::use_github()
