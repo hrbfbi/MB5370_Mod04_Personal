@@ -133,4 +133,15 @@ crs4326$wkt # crs in well-known text format
 
 WKT is a text markup language for representing vector geometry objects on a map. It is used to describe the geometry of spatial features in a human-readable format.
 
-## 
+## Feature collection (points)
+
+Let’s now look at what we created with sdat. 
+
+```{r}
+sdat
+```
+
+The data table in sdat looks much like dat did, but note it now has a geometry column. This is where the coordinates (just one point for each data row) are stored. 
+
+So in summary, a simple feature is like a shapefile, in that it holds a lot of data in columns and rows but is spatially aware. Essentially, that includes extra columns regarding each row's position (in coordinates) and metadata about the coordinate reference system, the type of geometry (Point) and so on.
+
