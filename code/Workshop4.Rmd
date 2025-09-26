@@ -171,7 +171,7 @@ library(viridis)
 
 ```{r}
 #using tmap
-
+tm1 <-
 tm_shape(sdat) + 
   tm_dots(col = "richness_raw")
 ```
@@ -259,3 +259,17 @@ tm_shape(shelf, bbox = sdat) +
 
 ## Exploring t_map
 
+Use ?tmap in R studio to see what the package has to offer.
+
+To learn about a quick way to change the style, type tmap_style("beaver") then run your map code again. This function is similar to ggplot themes, and will allow you to style your maps in a way you find effective for best communicating your findings. Even better, it allows you to add your own personal touch to your maps made in R. 
+
+Now open the tmap vignette. It can be accessed via coding or web search ‘r tmap’.
+
+```{r}
+browseVignettes("tmap")
+vignette('tmap-getstarted')
+```
+
+## Exporting your map
+
+Once you are satisfied with your map theme, colors etc. you can save and export it. You can do so by using tmap_save() to save your map as either an .html file or an image file (.JPG, .PNG etc.) to your designated folder. See ?tmap_save() in R studio for a full explanation of the arguments used with this command.
